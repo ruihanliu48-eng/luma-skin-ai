@@ -1,0 +1,28 @@
+# Local Python environment
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Runtime SQLite database and its WAL sidecars
+skin_app.db
+skin_app.db-wal
+skin_app.db-shm
+*.db-journal
+
+# Local secrets, if added by a hosting environment
+.env
+.env.*
+.streamlit/secrets.toml
+*.pem
+*.key
+
+# Local deployment credentials
+.gh-config/
+.uv-cache/
+.runtime-temp/
+.test-tmp/
+
+# OS files
+.DS_Store
+Thumbs.db
