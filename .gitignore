@@ -19,6 +19,7 @@ skin_app.db-shm
 
 # Local deployment credentials
 .gh-config/
+.streamlit-profile/
 .uv-cache/
 .runtime-temp/
 .test-tmp/
