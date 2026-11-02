@@ -2,7 +2,7 @@
 
 The app keeps the implementation intentionally small:
 - Streamlit for the interface
-- SQLite for accounts, analysis history, and a simulated product catalog
+- SQLite for accounts, analysis history, and a curated product catalog
 - The HKBU chat-completions endpoint for vision analysis
 - Pillow for image normalization and Plotly for the KPI dashboard
 """
@@ -46,104 +46,50 @@ PBKDF2_ITERATIONS = 600_000
 Image.MAX_IMAGE_PIXELS = 40_000_000
 
 PAGE_OPTIONS = ("Analyze", "History & Trends", "Recommendations", "About")
-CONCERN_OPTIONS = (
-    "breakouts",
-    "redness",
-    "dryness",
-    "oiliness",
-    "dullness",
-    "texture",
-    "dark spots",
-    "fine lines",
-    "sensitivity",
-    "pores",
-)
-
-# Fictional catalog used only to demonstrate the recommendation feature.
 DEMO_PRODUCTS: list[dict[str, Any]] = [
     {
-        "name": "Clear Start Gel Cleanser",
+        "name": "CeraVe Foaming Facial Cleanser",
+        "brand": "CeraVe",
         "category": "Cleanser",
-        "concerns": ["breakouts", "oiliness", "pores"],
-        "price_cents": 1800,
-        "description": "A low-foam gel cleanser that lifts excess oil without a tight finish.",
+        "kpi_dimension": "cleanliness",
+        "description": (
+            "A daily foaming face wash for normal-to-oily skin. "
+            "Helps remove excess oil and residue without a tight finish."
+        ),
+        "amazon_url": "https://www.amazon.com/dp/B003YMJJSK",
     },
     {
-        "name": "Soft Reset Cream Cleanser",
-        "category": "Cleanser",
-        "concerns": ["dryness", "sensitivity", "redness"],
-        "price_cents": 2200,
-        "description": "A cushiony cream cleanser for a quiet, comfortable cleanse.",
-    },
-    {
-        "name": "Daily Balance Foam",
-        "category": "Cleanser",
-        "concerns": ["oiliness", "pores"],
-        "price_cents": 1600,
-        "description": "A soft everyday foam that rinses clean without stripping.",
-    },
-    {
-        "name": "Smooth Operator BHA Toner",
+        "name": "Paula's Choice Skin Perfecting 2% BHA Liquid Exfoliant",
+        "brand": "Paula's Choice",
         "category": "Exfoliant",
-        "concerns": ["texture", "pores", "breakouts"],
-        "price_cents": 2400,
-        "description": "A gentle liquid exfoliant for congested pores and uneven texture.",
+        "kpi_dimension": "cleanliness",
+        "description": (
+            "A leave-on 2% salicylic acid exfoliant for visible congestion, "
+            "enlarged-looking pores, and uneven texture."
+        ),
+        "amazon_url": "https://www.amazon.com/dp/B00949CTQQ",
     },
     {
-        "name": "Dew Drop Hydrating Serum",
-        "category": "Serum",
-        "concerns": ["dryness", "fine lines"],
-        "price_cents": 2900,
-        "description": "A lightweight layer of water-binding hydration for thirsty skin.",
-    },
-    {
-        "name": "Calm Current Serum",
-        "category": "Serum",
-        "concerns": ["redness", "sensitivity", "texture"],
-        "price_cents": 3200,
-        "description": "A soothing serum for skin that feels reactive or easily flushed.",
-    },
-    {
-        "name": "Glow Protocol Vitamin C",
-        "category": "Serum",
-        "concerns": ["dullness", "dark spots", "texture"],
-        "price_cents": 3600,
-        "description": "A brightening antioxidant serum for a more even-looking tone.",
-    },
-    {
-        "name": "Barrier Cloud Moisturizer",
+        "name": "CeraVe Moisturizing Cream",
+        "brand": "CeraVe",
         "category": "Moisturizer",
-        "concerns": ["dryness", "sensitivity", "fine lines"],
-        "price_cents": 2700,
-        "description": "A rich but non-greasy cream that supports a comfortable barrier.",
+        "kpi_dimension": "quality",
+        "description": (
+            "A fragrance-free ceramide moisturizer for face and body. "
+            "Supports a comfortable skin barrier and lasting hydration."
+        ),
+        "amazon_url": "https://www.amazon.com/dp/B00TTD9BRC",
     },
     {
-        "name": "Matte Horizon Gel Cream",
-        "category": "Moisturizer",
-        "concerns": ["oiliness", "pores"],
-        "price_cents": 2300,
-        "description": "A weightless gel cream that softens shine and keeps skin comfortable.",
-    },
-    {
-        "name": "Night Shift Retinol 0.3%",
-        "category": "Treatment",
-        "concerns": ["fine lines", "texture", "dark spots"],
-        "price_cents": 3900,
-        "description": "A slow-introduction night treatment for texture and early line support.",
-    },
-    {
-        "name": "Spot Check Gel",
-        "category": "Treatment",
-        "concerns": ["breakouts", "oiliness"],
-        "price_cents": 1400,
-        "description": "A targeted gel for the occasional visible blemish.",
-    },
-    {
-        "name": "Daily Armor SPF 50",
-        "category": "Sunscreen",
-        "concerns": ["dark spots", "fine lines"],
-        "price_cents": 2600,
-        "description": "A comfortable daily sunscreen that layers well under makeup.",
+        "name": "La Roche-Posay Hyalu B5 Hyaluronic Acid Serum",
+        "brand": "La Roche-Posay",
+        "category": "Serum",
+        "kpi_dimension": "quality",
+        "description": (
+            "A hyaluronic acid and vitamin B5 serum for visible dehydration "
+            "and loss of bounce. Layers well under moisturizer."
+        ),
+        "amazon_url": "https://www.amazon.com/dp/B075VX4QVM",
     },
 ]
 
@@ -374,11 +320,30 @@ p, label, .stMarkdown { color: var(--ink); }
 }
 .product-top { display: flex; justify-content: space-between; gap: 0.7rem; align-items: flex-start; }
 .product-cat { color: var(--forest); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700; }
-.product-price { font-family: Georgia, serif; font-size: 1.2rem; white-space: nowrap; }
+.product-brand { color: var(--muted); font-size: 0.7rem; text-align: right; }
 .product-name { font-family: Georgia, serif; font-size: 1.2rem; line-height: 1.2; margin: 0.55rem 0 0.35rem; }
 .product-desc { color: var(--muted); font-size: 0.82rem; line-height: 1.5; margin: 0 0 0.65rem; }
-.product-concerns { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.6rem; }
 .product-why { margin-top: auto; padding-top: 0.65rem; border-top: 1px solid #ece5d9; color: #3f5d52; font-size: 0.76rem; line-height: 1.5; }
+.product-card-link {
+  display: block;
+  color: inherit !important;
+  text-decoration: none !important;
+  margin-bottom: 0.8rem;
+  border-radius: 18px;
+}
+.product-card-link .product-card { height: 100%; transition: transform 160ms ease, box-shadow 160ms ease; }
+.product-card-link:hover .product-card {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(62,73,63,0.12);
+}
+.product-cta {
+  color: var(--forest);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: 0.65rem;
+}
+.rec-section-head { margin: 1.35rem 0 0.7rem; }
+.rec-section-head h3 { margin: 0.2rem 0 0.2rem; font-size: 1.5rem; }
 
 .about-card {
   background: rgba(255,253,248,0.9);
@@ -492,12 +457,25 @@ def db_connection() -> Iterator[sqlite3.Connection]:
 
 
 def init_db() -> None:
-    """Create tables, indexes, and the simulated catalog if needed."""
+    """Create tables, indexes, and the curated product catalog if needed."""
 
     try:
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         with db_connection() as conn:
             conn.execute("PRAGMA journal_mode = WAL")
+
+            # The product catalog is static. Drop the old mock-catalog schema so
+            # existing local databases migrate without preserving fake products.
+            has_products = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'products'"
+            ).fetchone()
+            if has_products:
+                product_columns = {
+                    row[1] for row in conn.execute("PRAGMA table_info(products)")
+                }
+                if not {"brand", "kpi_dimension", "amazon_url"}.issubset(product_columns):
+                    conn.execute("DROP TABLE products")
+
             conn.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS users (
@@ -528,10 +506,12 @@ def init_db() -> None:
                 CREATE TABLE IF NOT EXISTS products (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL UNIQUE,
+                    brand TEXT NOT NULL,
                     category TEXT NOT NULL,
-                    concerns TEXT NOT NULL,
-                    price_cents INTEGER NOT NULL CHECK (price_cents >= 0),
-                    description TEXT NOT NULL
+                    kpi_dimension TEXT NOT NULL
+                        CHECK (kpi_dimension IN ('cleanliness', 'quality')),
+                    description TEXT NOT NULL,
+                    amazon_url TEXT NOT NULL
                 );
                 """
             )
@@ -545,25 +525,28 @@ def init_db() -> None:
 
 
 def _seed_products(conn: sqlite3.Connection) -> None:
-    """Keep the simulated catalog in sync without creating duplicate rows."""
+    """Keep the real-product catalog in sync without creating duplicate rows."""
 
     for product in DEMO_PRODUCTS:
         conn.execute(
             """
-            INSERT INTO products (name, category, concerns, price_cents, description)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO products
+                (name, brand, category, kpi_dimension, description, amazon_url)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT(name) DO UPDATE SET
+                brand = excluded.brand,
                 category = excluded.category,
-                concerns = excluded.concerns,
-                price_cents = excluded.price_cents,
-                description = excluded.description
+                kpi_dimension = excluded.kpi_dimension,
+                description = excluded.description,
+                amazon_url = excluded.amazon_url
             """,
             (
                 product["name"],
+                product["brand"],
                 product["category"],
-                json.dumps(product["concerns"]),
-                int(product["price_cents"]),
+                product["kpi_dimension"],
                 product["description"],
+                product["amazon_url"],
             ),
         )
 
@@ -571,18 +554,13 @@ def _seed_products(conn: sqlite3.Connection) -> None:
 def fetch_products() -> list[dict[str, Any]]:
     with db_connection() as conn:
         rows = conn.execute(
-            "SELECT name, category, concerns, price_cents, description FROM products ORDER BY category, name"
+            """
+            SELECT id, name, brand, category, kpi_dimension, description, amazon_url
+            FROM products
+            ORDER BY id
+            """
         ).fetchall()
-
-    products: list[dict[str, Any]] = []
-    for row in rows:
-        item = dict(row)
-        try:
-            item["concerns"] = json.loads(item["concerns"])
-        except (TypeError, json.JSONDecodeError):
-            item["concerns"] = []
-        products.append(item)
-    return products
+    return [dict(row) for row in rows]
 
 
 # ---------------------------------------------------------------------------
@@ -1028,114 +1006,78 @@ def analyze_face(image_jpeg: bytes, api_key: str) -> SkinAnalysis:
 # ---------------------------------------------------------------------------
 
 
-def _score_product(
+def _product_reason(
     product: dict[str, Any],
-    focus: str,
-    concerns: list[str],
     cleanliness: float,
     quality: float,
-) -> float:
-    category = product["category"]
-    score = 0.0
+) -> str:
+    """Explain a product using the measured KPI and its skincare role."""
 
-    if focus == "cleanliness":
-        score += {
-            "Cleanser": 5.0,
-            "Exfoliant": 4.0,
-            "Treatment": 3.0,
-            "Moisturizer": 2.0,
-            "Sunscreen": 2.0,
-            "Serum": 1.0,
-        }.get(category, 0.0)
-        if cleanliness < 5 and category in {"Cleanser", "Exfoliant", "Treatment"}:
-            score += 3.0
-    elif focus == "quality":
-        score += {
-            "Serum": 5.0,
-            "Moisturizer": 5.0,
-            "Treatment": 2.0,
-            "Cleanser": 2.0,
-            "Sunscreen": 2.0,
-            "Exfoliant": 1.0,
-        }.get(category, 0.0)
-        if quality < 5 and category in {"Serum", "Moisturizer"}:
-            score += 3.0
+    dimension = product["kpi_dimension"]
+    score = cleanliness if dimension == "cleanliness" else quality
+    label = "cleanliness" if dimension == "cleanliness" else "quality"
+
+    if product["category"] == "Cleanser":
+        detail = "Daily cleansing helps manage visible oil, residue, and congestion."
+    elif product["category"] == "Exfoliant":
+        if cleanliness < 7.5:
+            detail = (
+                "Targets visible congestion and uneven texture. Start two to three "
+                "times per week and patch test first."
+            )
+        else:
+            detail = (
+                "Optional weekly exfoliation for visible congestion; not required "
+                "for a maintenance routine."
+            )
+    elif product["category"] == "Moisturizer":
+        detail = "Supports barrier comfort, hydration, and a smoother-looking surface."
+    elif product["category"] == "Serum":
+        if quality < 7.5:
+            detail = "Adds hydration to support visible bounce and texture."
+        else:
+            detail = "Light hydration to maintain visible smoothness and comfort."
     else:
-        score += {
-            "Sunscreen": 5.0,
-            "Moisturizer": 4.0,
-            "Cleanser": 3.0,
-            "Serum": 2.0,
-            "Treatment": 1.0,
-            "Exfoliant": 1.0,
-        }.get(category, 0.0)
+        detail = "A supportive product selected for this KPI profile."
 
-    overlap = set(concerns) & set(product["concerns"])
-    score += 4.0 * len(overlap)
-
-    if "redness" in concerns and "redness" in product["concerns"]:
-        score += 1.0
-    return score
+    return f"Current {label} KPI: {score:.1f}/10. {detail}"
 
 
 def recommend_products(
     cleanliness: float,
     quality: float,
-    concerns: list[str],
-) -> list[dict[str, Any]]:
-    """Return 1-3 catalog products driven by the lowest KPI and user concerns."""
+) -> dict[str, list[dict[str, Any]]]:
+    """Return exactly two real products for each measured KPI dimension."""
 
     products = fetch_products()
-    if not products:
-        return []
+    grouped: dict[str, list[dict[str, Any]]] = {
+        "cleanliness": [],
+        "quality": [],
+    }
 
-    if abs(cleanliness - quality) < 0.5:
-        focus = "balance"
-    elif cleanliness < quality:
-        focus = "cleanliness"
-    else:
-        focus = "quality"
-
-    ranked = sorted(
-        products,
-        key=lambda product: _score_product(
-            product, focus, concerns, cleanliness, quality
-        ),
-        reverse=True,
-    )
-
-    selected: list[dict[str, Any]] = []
-    used_categories: set[str] = set()
-    for product in ranked:
-        if product["category"] in used_categories:
+    for product in products:
+        dimension = product["kpi_dimension"]
+        if dimension not in grouped or len(grouped[dimension]) >= 2:
             continue
-        used_categories.add(product["category"])
-        selected.append(product)
-        if len(selected) == 3:
-            break
+        grouped[dimension].append(
+            {
+                "product": product,
+                "reason": _product_reason(product, cleanliness, quality),
+            }
+        )
 
-    if not selected:
-        selected = products[:1]
+    return grouped
 
-    results: list[dict[str, Any]] = []
-    for product in selected:
-        overlap = [item for item in concerns if item in product["concerns"]]
-        reasons: list[str] = []
-        if overlap:
-            reasons.append("Matches your focus on " + ", ".join(overlap[:2]) + ".")
-        if focus == "cleanliness" and product["category"] in {
-            "Cleanser", "Exfoliant", "Treatment"
-        }:
-            reasons.append("Supports the lower cleanliness KPI.")
-        elif focus == "quality" and product["category"] in {"Serum", "Moisturizer"}:
-            reasons.append("Supports the lower quality KPI.")
-        elif focus == "balance" and product["category"] == "Sunscreen":
-            reasons.append("A simple daily protection step for maintenance.")
-        if not reasons:
-            reasons.append("A supportive step that fits the current KPI profile.")
-        results.append({"product": product, "reason": " ".join(reasons)})
 
-    return results
+def safe_amazon_url(value: str) -> str:
+    """Allow only Amazon product URLs in rendered links."""
+
+    url = str(value).strip()
+    allowed_prefixes = (
+        "https://www.amazon.com/dp/",
+        "https://amazon.com/dp/",
+    )
+    return url if url.startswith(allowed_prefixes) else ""
 
 
 # ---------------------------------------------------------------------------
@@ -1687,12 +1629,40 @@ def render_history_page(user: dict[str, Any]) -> None:
 # ---------------------------------------------------------------------------
 
 
+def render_product_card(item: dict[str, Any]) -> None:
+    product = item["product"]
+    url = safe_amazon_url(product["amazon_url"])
+    if not url:
+        return
+
+    st.html(
+        f"""
+        <a class="product-card-link"
+           href="{escape(url)}"
+           target="_blank"
+           rel="noopener noreferrer"
+           aria-label="View {escape(product['name'])} on Amazon">
+          <div class="product-card">
+            <div class="product-top">
+              <div class="product-cat">{escape(product["category"])}</div>
+              <div class="product-brand">{escape(product["brand"])}</div>
+            </div>
+            <div class="product-name">{escape(product["name"])}</div>
+            <p class="product-desc">{escape(product["description"])}</p>
+            <div class="product-why"><strong>Why it fits:</strong> {escape(item["reason"])}</div>
+            <div class="product-cta">View on Amazon <span aria-hidden="true">↗</span></div>
+          </div>
+        </a>
+        """
+    )
+
+
 def render_recommendations_page(user: dict[str, Any]) -> None:
     page_head(
-        "Personalized edit",
+        "KPI-based product edit",
         "Recommendations",
-        "Recommendations use the lower KPI and the concerns you select. "
-        "The catalog is a prototype and does not represent real products for sale.",
+        "Two real product references are shown for each measured KPI. "
+        "The lower KPI is the primary focus; the other section supports maintenance.",
     )
 
     recent = latest_analysis(user["id"])
@@ -1728,14 +1698,6 @@ def render_recommendations_page(user: dict[str, Any]) -> None:
                 "Skin Quality KPI", 0.0, 10.0, 6.0, 0.5, key="manual_quality"
             )
 
-    concerns = st.multiselect(
-        "Current concerns",
-        list(CONCERN_OPTIONS),
-        key="recommendation_concerns",
-        format_func=lambda value: value.title(),
-        help="Used to prioritize catalog products alongside the lower KPI.",
-    )
-
     lower_name = "cleanliness" if cleanliness < quality else "quality"
     lower_value = min(cleanliness, quality)
     st.html(
@@ -1743,43 +1705,46 @@ def render_recommendations_page(user: dict[str, Any]) -> None:
         <div class="callout">
           Primary focus: <strong>{escape(lower_name.title())}</strong>
           at <strong>{lower_value:.1f}/10</strong>.
-          Recommendations are limited to 1-3 products so the routine stays simple.
+          Start with the products in that section; the other section supports the
+          second measured dimension.
         </div>
         """
     )
 
-    recommendations = recommend_products(cleanliness, quality, concerns)
-    if not recommendations:
-        st.warning("The prototype catalog is unavailable. Re-run the app to reseed the database.")
+    recommendations = recommend_products(cleanliness, quality)
+    if not any(recommendations.values()):
+        st.warning("The product catalog is unavailable. Re-run the app to reseed the database.")
         return
 
-    st.markdown("### Suggested products")
-    columns = st.columns(3, gap="large")
-    for index, item in enumerate(recommendations):
-        product = item["product"]
-        with columns[index]:
-            concern_pills = "".join(
-                f'<span class="pill">{escape(concern)}</span>'
-                for concern in product["concerns"][:3]
-            )
-            st.html(
-                f"""
-                <div class="product-card">
-                  <div class="product-top">
-                    <div class="product-cat">{escape(product["category"])}</div>
-                    <div class="product-price">${product["price_cents"] / 100:.2f}</div>
-                  </div>
-                  <div class="product-name">{escape(product["name"])}</div>
-                  <p class="product-desc">{escape(product["description"])}</p>
-                  <div class="product-concerns">{concern_pills}</div>
-                  <div class="product-why"><strong>Why it fits:</strong> {escape(item["reason"])}</div>
-                </div>
-                """
-            )
+    sections = sorted(
+        (
+            ("cleanliness", "Cleanliness support", cleanliness),
+            ("quality", "Quality support", quality),
+        ),
+        key=lambda section: section[2],
+    )
+    for dimension, title, score in sections:
+        items = recommendations.get(dimension, [])
+        if not items:
+            continue
+        st.html(
+            f"""
+            <div class="rec-section-head">
+              <div class="eyebrow">Measured KPI {score:.1f} / 10</div>
+              <h3>{escape(title)}</h3>
+            </div>
+            """
+        )
+        columns = st.columns(2, gap="large")
+        for column, item in zip(columns, items):
+            with column:
+                render_product_card(item)
 
     st.caption(
-        "Prototype catalog · Prices are illustrative · No purchase links · "
-        "Introduce one new product at a time and patch test first."
+        "Product links open Amazon.com product pages in a new tab. "
+        "Prices and availability are controlled by Amazon; no affiliate tag is included. "
+        "Introduce one new product at a time and patch test first. "
+        "This is not medical advice."
     )
 
 
@@ -1813,9 +1778,10 @@ def render_about_page() -> None:
             """
             <div class="about-card">
               <div class="eyebrow">Recommendations</div>
-              <h3>Rule-based, not diagnostic</h3>
-              <p>The prototype catalog is fictional. Product selection is driven by the
-              lower KPI and the concerns selected on the Recommendations page.</p>
+              <h3>KPI-based, not diagnostic</h3>
+              <p>Two real product references are provided for each measured KPI:
+              Skin Cleanliness and Skin Quality. Product cards open the corresponding
+              Amazon.com product page in a new tab. No affiliate tag is included.</p>
             </div>
             """
         )

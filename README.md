@@ -40,11 +40,11 @@ recommendation.
    - Plotly line chart for Skin Cleanliness and Skin Quality over time.
    - Range filter: 7, 30, 90 days, or all time.
 
-3. **Personalized recommendations and simulated catalog**
-   - Rule-based recommendations driven by the lower KPI and selected concerns.
-   - SQLite product catalog with name, category, concerns, price, and description.
-   - Returns 1-3 products with a short reason.
-   - Clearly labelled as a prototype/simulated catalog.
+3. **KPI-specific product recommendations**
+   - Four real product references: two for Skin Cleanliness and two for Skin Quality.
+   - Product cards are clickable and open the corresponding Amazon.com product page.
+   - Recommendation reasons are tied to the user's actual KPI values.
+   - No affiliate tag is included; Amazon controls prices and availability.
 
 ## Files
 
@@ -212,10 +212,11 @@ analyses (
 products (
   id INTEGER PRIMARY KEY,
   name TEXT UNIQUE,
+  brand TEXT,
   category TEXT,
-  concerns TEXT,          -- JSON array
-  price_cents INTEGER,
-  description TEXT
+  kpi_dimension TEXT CHECK (kpi_dimension IN ('cleanliness', 'quality')),
+  description TEXT,
+  amazon_url TEXT
 )
 ```
 
@@ -230,7 +231,7 @@ products (
 | --- | --- |
 | **Analyze** | Two-column layout: photo upload and submit on the left; result and observation on the right. |
 | **History & Trends** | Summary stats, Plotly trend chart, range filter, and saved-scan table. |
-| **Recommendations** | Latest KPI or manual KPI mode, concern selection, 1-3 prototype products. |
+| **Recommendations** | Latest KPI or manual KPI mode; two products per KPI with Amazon product links. |
 | **About** | Data handling, prototype limits, and the non-medical disclaimer. |
 
 Authentication is required before the sidebar navigation appears. The sidebar contains
@@ -238,15 +239,33 @@ the nav, API key field, and sign-out button.
 
 ## Recommendation rules
 
-The prototype uses the lower of the two KPIs to choose a primary focus:
+Each measured KPI has exactly two product references:
 
-- Lower **Cleanliness**: prioritize cleansers, exfoliants, and treatments.
-- Lower **Quality**: prioritize serums and moisturizers.
-- Similar scores: prioritize maintenance products and sunscreen.
+- **Skin Cleanliness**: one daily cleanser and one salicylic-acid leave-on exfoliant.
+- **Skin Quality**: one barrier moisturizer and one hyaluronic-acid serum.
+- The lower KPI is shown as the primary focus.
+- Product reasons include the actual measured KPI, for example
+  `Current cleanliness KPI: 6.2/10`.
+- The exfoliant reason changes to an optional, weekly-use message when cleanliness
+  is already high.
+- Each card opens an Amazon.com product page in a new tab. No affiliate tag is used.
+- Recommendations are cosmetic suggestions, not clinical advice.
 
-Selected concerns add weight to products tagged with those concerns. Only one product per
-category is selected, capped at three products. The recommendations are explanatory,
-rule-based suggestions, not clinical advice.
+The catalog is seeded with idempotent upserts. If an older mock catalog schema is found in
+an existing local `skin_app.db`, the products table is dropped and recreated; user accounts
+and analysis history are preserved.
+
+Current product references:
+
+| KPI | Product | Link |
+| --- | --- | --- |
+| Skin Cleanliness | CeraVe Foaming Facial Cleanser | [Amazon B003YMJJSK](https://www.amazon.com/dp/B003YMJJSK) |
+| Skin Cleanliness | Paula's Choice Skin Perfecting 2% BHA Liquid Exfoliant | [Amazon B00949CTQQ](https://www.amazon.com/dp/B00949CTQQ) |
+| Skin Quality | CeraVe Moisturizing Cream | [Amazon B00TTD9BRC](https://www.amazon.com/dp/B00TTD9BRC) |
+| Skin Quality | La Roche-Posay Hyalu B5 Hyaluronic Acid Serum | [Amazon B075VX4QVM](https://www.amazon.com/dp/B075VX4QVM) |
+
+The product cards render as full-card links with `target="_blank"` and
+`rel="noopener noreferrer"`.
 
 ## Error behavior
 
@@ -296,6 +315,7 @@ relative path is not a durable-storage setup.
 
 - Cosmetic visual estimation only; no diagnosis or treatment advice.
 - Lighting, angle, makeup, filters, and image quality affect the model response.
-- The product catalog is fictional and prices are illustrative.
+- Product prices, availability, and formulations are controlled by Amazon and may change.
+- Patch test new products and introduce one product at a time; stop if irritation occurs.
 - Authentication is session-based; there is no email recovery or password reset.
 - The app does not store or display prior uploaded images.
