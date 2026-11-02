@@ -404,7 +404,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:has([data-testid="stForm"]) {
   padding: 0.55rem 0.35rem;
   box-shadow: 0 24px 55px rgba(61,72,62,0.09);
 }
-[data-testid="stAppDeployButton"], [data-testid="stToolbar"] { display: none !important; }
+[data-testid="stAppDeployButton"], [data-testid="stMainMenuButton"] { display: none !important; }
 [data-testid="stHeaderActionElements"], h1 a, h2 a, h3 a, h4 a { display: none !important; }
 [data-baseweb="input"] > div,
 [data-baseweb="select"] > div,
