@@ -1698,15 +1698,24 @@ def render_recommendations_page(user: dict[str, Any]) -> None:
                 "Skin Quality KPI", 0.0, 10.0, 6.0, 0.5, key="manual_quality"
             )
 
-    lower_name = "cleanliness" if cleanliness < quality else "quality"
-    lower_value = min(cleanliness, quality)
+    if abs(cleanliness - quality) < 0.1:
+        focus_html = (
+            f"Balanced focus at <strong>{cleanliness:.1f}/10</strong>. "
+            "Both KPI sections are shown below."
+        )
+    else:
+        lower_name = "cleanliness" if cleanliness < quality else "quality"
+        lower_value = min(cleanliness, quality)
+        focus_html = (
+            f"Primary focus: <strong>{escape(lower_name.title())}</strong> "
+            f"at <strong>{lower_value:.1f}/10</strong>. "
+            "Start with the products in that section; the other section supports "
+            "the second measured dimension."
+        )
     st.html(
         f"""
         <div class="callout">
-          Primary focus: <strong>{escape(lower_name.title())}</strong>
-          at <strong>{lower_value:.1f}/10</strong>.
-          Start with the products in that section; the other section supports the
-          second measured dimension.
+          {focus_html}
         </div>
         """
     )
